@@ -137,3 +137,190 @@ docker run --rm -p 3000:3000 \
 ```
 
 If you want SSE transport instead of streamable HTTP, set `MCP_TRANSPORT=sse`.
+
+## Configuration with Claude Code / Claude Desktop
+
+This FastMCP server can be integrated with Claude Code (CLI), Claude Desktop, or other MCP-compatible clients.
+
+### Step 1: Start the FastMCP Server
+
+First, ensure your LightRAG server is running, then start this FastMCP bridge:
+
+```bash
+# Set environment variables (optional, defaults shown)
+export LIGHTRAG_BASE_URL=http://localhost:9621
+export LIGHTRAG_API_KEY=your_api_key_if_needed
+export MCP_HOST=0.0.0.0
+export MCP_PORT=3000
+export MCP_TRANSPORT=streamable-http  # or "sse" or "stdio"
+
+# Start the server
+python -m lightrag_fastmcp_bridge.server
+```
+
+The server will start on `http://0.0.0.0:3000` (or your configured host/port).
+
+### Step 2: Configure Claude Code / Claude Desktop
+
+#### Find Your Configuration File
+
+**macOS:**
+```
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+**Windows:**
+```
+%APPDATA%/Claude/claude_desktop_config.json
+```
+
+**Linux:**
+```
+~/.config/Claude/claude_desktop_config.json
+```
+
+#### Add the MCP Server Configuration
+
+Open the configuration file and add the following entry to the `mcpServers` section:
+
+**For streamable-http transport (default):**
+```json
+{
+  "mcpServers": {
+    "lightrag": {
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:3000/mcp"
+      }
+    }
+  }
+}
+```
+
+**For SSE transport:**
+```json
+{
+  "mcpServers": {
+    "lightrag": {
+      "transport": {
+        "type": "sse",
+        "url": "http://localhost:3000/sse"
+      }
+    }
+  }
+}
+```
+
+**For stdio transport:**
+```json
+{
+  "mcpServers": {
+    "lightrag": {
+      "command": "python",
+      "args": [
+        "-m",
+        "lightrag_fastmcp_bridge.server"
+      ],
+      "env": {
+        "LIGHTRAG_BASE_URL": "http://localhost:9621",
+        "LIGHTRAG_API_KEY": "your_api_key_if_needed",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+### Step 3: Restart Claude Code / Claude Desktop
+
+After saving the configuration file:
+
+1. **Quit** Claude Code or Claude Desktop completely
+2. **Restart** the application
+3. The MCP server will be automatically connected on startup
+
+### Step 4: Verify the Connection
+
+Once connected, you can verify the setup by asking Claude to use the LightRAG tools:
+
+```
+"Can you check if the LightRAG server is healthy?"
+"What documents are in my LightRAG knowledge base?"
+```
+
+Claude should be able to use the `health()` and `list_documents()` tools to respond.
+
+### Usage Examples
+
+Once configured, you can interact with your LightRAG knowledge base through Claude:
+
+```
+# Query your knowledge base
+"Search for information about [topic] in my knowledge base"
+
+# Insert new content
+"Add this document to my knowledge base: [your text]"
+
+# Check document status
+"Show me the processing status of my documents"
+
+# Delete documents
+"Delete the document with ID [doc_id]"
+```
+
+### Troubleshooting
+
+**Connection Issues:**
+- Ensure the FastMCP server is running before starting Claude
+- Check that the port (3000) is not blocked by a firewall
+- Verify the LightRAG server (9621) is accessible
+
+**Configuration Errors:**
+- Validate your JSON configuration syntax
+- Ensure environment variables are properly set
+- Check Claude's logs for MCP connection errors
+
+**Tool Not Available:**
+- Restart Claude after configuration changes
+- Verify the MCP server is running
+- Check that the transport type matches your server configuration
+
+### Advanced Configuration
+
+**Custom Port:**
+```json
+{
+  "mcpServers": {
+    "lightrag": {
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:8000/mcp"
+      }
+    }
+  }
+}
+```
+
+Then start the server with:
+```bash
+export MCP_PORT=8000
+python -m lightrag_fastmcp_bridge.server
+```
+
+**With API Key:**
+```json
+{
+  "mcpServers": {
+    "lightrag": {
+      "command": "python",
+      "args": ["-m", "lightrag_fastmcp_bridge.server"],
+      "env": {
+        "LIGHTRAG_BASE_URL": "http://localhost:9621",
+        "LIGHTRAG_API_KEY": "your-secure-api-key"
+      }
+    }
+  }
+}
+```
+
+For more information about MCP configuration, see the [Model Context Protocol documentation](https://modelcontextprotocol.io/).
