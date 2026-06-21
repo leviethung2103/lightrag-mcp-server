@@ -73,6 +73,46 @@ docker compose up
 
 For more detailed information about LightRAG configuration and options, visit the [LightRAG repository](https://github.com/HKUDS/LightRAG).
 
+## Available Tools
+
+This FastMCP bridge provides the following tools for interacting with your LightRAG server:
+
+### Health & Status
+
+| Tool | Description |
+|------|-------------|
+| `health()` | Check whether the LightRAG server is alive and responsive |
+
+### Query Operations
+
+| Tool | Description |
+|------|-------------|
+| `query(question, include_references, include_chunk_content)` | Run a LightRAG query and return the final response payload |
+| `query_stream(question, include_references, include_chunk_content)` | Run a streamed LightRAG query and concatenate the streamed text |
+
+### Document Insertion
+
+| Tool | Description |
+|------|-------------|
+| `insert_text(text, file_source, title, metadata)` | Insert raw text into LightRAG knowledge base |
+| `insert_texts(texts)` | Insert multiple text payloads into LightRAG in batch |
+
+### Document Management
+
+| Tool | Description |
+|------|-------------|
+| `scan_documents()` | Trigger a document scan to process uploaded files |
+| `document_status_counts()` | Get counts of documents by processing status |
+| `list_documents(page, page_size, status)` | List paginated documents with optional status filtering |
+| `delete_document(doc_id)` | Delete a document by its ID |
+
+### Pipeline & Tracking
+
+| Tool | Description |
+|------|-------------|
+| `pipeline_state()` | Get the current ingestion pipeline state and progress |
+| `get_track_status(track_id)` | Get detailed ingestion status for a specific track ID |
+
 ## Environment
 
 - `LIGHTRAG_BASE_URL` - LightRAG API base URL, for example `http://localhost:9621`
