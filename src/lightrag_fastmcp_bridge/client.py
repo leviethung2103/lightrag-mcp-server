@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Any, AsyncIterator
 
 import httpx
-from httpx_sse import aconnect_sse
 
 
 @dataclass
@@ -29,42 +28,29 @@ class LightRAGClient:
             r.raise_for_status()
             return r.json()
 
-    async def query(self, query: str, *, include_references: bool = True, include_chunk_content: bool = False, stream: bool = False) -> dict[str, Any]:
+    async def query(self, query: str, *, mode: str = "naive", include_references: bool = True, include_chunk_content: bool = False, only_need_context: bool = False, only_need_prompt: bool = False, response_type: str = "Multiple Paragraphs", top_k: int = 10, enable_rerank: bool = False, hl_keywords: list[str] | None = None, ll_keywords: list[str] | None = None) -> dict[str, Any]:
         payload = {
             "query": query,
+            "mode": mode,
             "include_references": include_references,
             "include_chunk_content": include_chunk_content,
             "stream": stream,
+            "only_need_context": only_need_context,
+            "only_need_prompt": only_need_prompt,
+            "response_type": response_type,
+            "top_k": top_k,
+            "enable_rerank": enable_rerank,
         }
+        if hl_keywords:
+            payload["hl_keywords"] = hl_keywords
+        if ll_keywords:
+            payload["ll_keywords"] = ll_keywords
+
         async with self._client() as client:
             r = await client.post("/query", json=payload)
             r.raise_for_status()
             return r.json()
 
-    async def query_stream(self, query: str, *, include_references: bool = True, include_chunk_content: bool = False) -> AsyncIterator[str]:
-        payload = {
-            "query": query,
-            "include_references": include_references,
-            "include_chunk_content": include_chunk_content,
-            "stream": True,
-        }
-        async with self._client() as client:
-            async with aconnect_sse(client, "POST", "/query/stream", json=payload) as event_source:
-                async for event in event_source.aiter_sse():
-                    data = event.data
-                    if not data:
-                        continue
-                    try:
-                        parsed = json.loads(data)
-                    except json.JSONDecodeError:
-                        yield data
-                        continue
-                    if isinstance(parsed, dict) and "response" in parsed:
-                        yield str(parsed["response"])
-                    elif isinstance(parsed, dict) and "token" in parsed:
-                        yield str(parsed["token"])
-                    else:
-                        yield data
 
     async def insert_text(self, text: str, *, file_source: str, title: str | None = None, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = {"text": text, "file_source": file_source, "title": title, "metadata": metadata or {}}

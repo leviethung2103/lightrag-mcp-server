@@ -32,18 +32,48 @@ async def health() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def query(question: str, include_references: bool = True, include_chunk_content: bool = False) -> dict[str, Any]:
-    """Run a LightRAG query and return the final response payload."""
-    return await build_client().query(question, include_references=include_references, include_chunk_content=include_chunk_content)
+async def query(
+    question: str,
+    mode: str = "naive",
+    include_references: bool = True,
+    include_chunk_content: bool = False,
+    only_need_context: bool = False,
+    only_need_prompt: bool = False,
+    response_type: str = "Multiple Paragraphs",
+    top_k: int = 10,
+    enable_rerank: bool = False,
+    hl_keywords: list[str] | None = None,
+    ll_keywords: list[str] | None = None,
+) -> dict[str, Any]:
+    """Run a LightRAG query and return the final response payload.
 
+    Args:
+        question: The query text to search for
+        mode: Query mode - "naive" (semantic vector search), "local", "global", "hybrid", or "mix" (default: "naive")
+        include_references: Include source references in response (default: True)
+        include_chunk_content: Include chunk content in response (default: False)
+        only_need_context: Return only context without LLM response (default: False)
+        only_need_prompt: Return only generated prompt without response (default: False)
+        response_type: Response format type (default: "Multiple Paragraphs")
+        top_k: Number of top results to return (default: 10)
+        enable_rerank: Enable reranking of results (default: False)
+        hl_keywords: High-level keywords for prioritization (optional)
+        ll_keywords: Low-level keywords for search refinement (optional)
+    """
+    return await build_client().query(
+        question,
+        mode=mode,
+        include_references=include_references,
+        include_chunk_content=include_chunk_content,
+        only_need_context=only_need_context,
+        only_need_prompt=only_need_prompt,
+        response_type=response_type,
+        top_k=top_k,
+        enable_rerank=enable_rerank,
+        hl_keywords=hl_keywords,
+        ll_keywords=ll_keywords,
+    )
 
-@mcp.tool()
-async def query_stream(question: str, include_references: bool = True, include_chunk_content: bool = False) -> str:
-    """Run a streamed LightRAG query and concatenate the streamed text."""
-    chunks: list[str] = []
-    async for chunk in build_client().query_stream(question, include_references=include_references, include_chunk_content=include_chunk_content):
-        chunks.append(chunk)
-    return "".join(chunks)
 
 
 @mcp.tool()
